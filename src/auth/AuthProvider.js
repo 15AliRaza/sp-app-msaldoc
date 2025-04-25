@@ -1,44 +1,56 @@
 import React, { useState, useEffect } from "react";
 import { MsalProvider } from "@azure/msal-react";
-import { PublicClientApplication, EventType } from "@azure/msal-browser";
-import { msalConfig } from "./authConfig";
+import {
+  PublicClientApplication,
+  EventType,
+  InteractionType,
+} from "@azure/msal-browser";
+import { msalConfig, loginRequest } from "./authConfig";
 
 export const msalInstance = new PublicClientApplication(msalConfig);
-// await msalInstance.initialize();
-
-// Optional - This will update account state if a user signs in from another tab or window
-/*msalInstance.addEventCallback((event) => {
-  if (
-    event.eventType === EventType.LOGIN_SUCCESS ||
-    event.eventType === EventType.ACQUIRE_TOKEN_SUCCESS
-  ) {
-    msalInstance.setActiveAccount(event.payload.account);
-  }
-});*/
 
 export const AuthProvider = ({ children }) => {
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    // MSAL initialization
-    msalInstance
-      .initialize()
-      .then(() => {
-        // Optional: Handle redirect response if using redirect flow
-        msalInstance
-          .handleRedirectPromise()
-          .then(() => {
-            setInitialized(true);
-          })
-          .catch(() => {
-            setInitialized(true);
-          });
-      })
-      .catch(() => {
-        setInitialized(true);
-      });
+    const initializeAuth = async () => {
+      try {
+        await msalInstance.initialize();
 
-    // Event callback for account changes
+        // 1. Check for redirect response (if coming back from login)
+        const redirectResponse = await msalInstance.handleRedirectPromise();
+        if (redirectResponse) {
+          msalInstance.setActiveAccount(redirectResponse.account);
+          setInitialized(true);
+          return;
+        }
+
+        // 2. Check for existing accounts silently
+        const accounts = msalInstance.getAllAccounts();
+        if (accounts.length > 0) {
+          try {
+            // Attempt silent token acquisition
+            const silentResponse = await msalInstance.acquireTokenSilent({
+              ...loginRequest,
+              account: accounts[0],
+            });
+            msalInstance.setActiveAccount(silentResponse.account);
+          } catch (silentError) {
+            // If silent fails, try interactive login via popup
+            await msalInstance.loginPopup(loginRequest);
+          }
+        }
+
+        setInitialized(true);
+      } catch (error) {
+        console.error("Authentication initialization failed:", error);
+        setInitialized(true);
+      }
+    };
+
+    initializeAuth();
+
+    // Event listener for account changes
     const callbackId = msalInstance.addEventCallback((event) => {
       if (
         event.eventType === EventType.LOGIN_SUCCESS ||
@@ -49,14 +61,12 @@ export const AuthProvider = ({ children }) => {
     });
 
     return () => {
-      if (callbackId) {
-        msalInstance.removeEventCallback(callbackId);
-      }
+      if (callbackId) msalInstance.removeEventCallback(callbackId);
     };
   }, []);
 
   if (!initialized) {
-    return <div>Initializing authentication...</div>;
+    return <div>Loading authentication state...</div>;
   }
 
   return <MsalProvider instance={msalInstance}>{children}</MsalProvider>;

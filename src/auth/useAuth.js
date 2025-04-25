@@ -5,15 +5,16 @@ import { loginRequest } from "./authConfig";
 export const useAuth = () => {
   const { instance, accounts, inProgress } = useMsal();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (inProgress == "none") {
+    if (inProgress === "none") {
       if (accounts.length > 0) {
         setIsAuthenticated(true);
-        setUser(accounts[0]);
+        setUserProfile(accounts[0]);
+        console.log(accounts[0]);
 
         // Get token silently
         instance
@@ -31,8 +32,9 @@ export const useAuth = () => {
             setIsLoading(false);
           });
       } else {
+        console.log("reset");
         setIsAuthenticated(false);
-        setUser(null);
+        setUserProfile(null);
         setToken(null);
         setIsLoading(false);
       }
@@ -51,6 +53,7 @@ export const useAuth = () => {
     setIsLoading(true);
     instance.logoutPopup().finally(() => setIsLoading(false));
   };
+  console.log("User", userProfile);
 
-  return { isAuthenticated, user, token, isLoading, login, logout };
+  return { isAuthenticated, userProfile, token, isLoading, login, logout };
 };
