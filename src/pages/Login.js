@@ -1,18 +1,27 @@
 import React, { useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 
 const Login = () => {
   const { isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
-  useEffect(() => {
+  const redirectUrl = searchParams.get("redirect") || "/";
+
+  /*useEffect(() => {
     if (isAuthenticated) {
       const origin = location.state?.from?.pathname || "/dashboard";
       navigate(origin);
     }
-  }, [isAuthenticated, navigate, location]);
+  }, [isAuthenticated, navigate, location]);*/
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(redirectUrl); // Will preserve the full URL with params
+    }
+  }, [isAuthenticated, navigate, redirectUrl]);
 
   return (
     <div className="container mt-5">
