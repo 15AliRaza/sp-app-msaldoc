@@ -1,13 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import { useEffect, useState } from "react";
-import "./Overlay.css";
 import queryString from "query-string";
-import { addReviewer1Data, getListItemById } from "../api/sharepoint";
+import { addApproverData, getListItemById } from "../api/sharepoint";
 import { useFlashMessage } from "../contexts/FlashMessageContext";
 import Header from "../components/Header";
 
-const Reviewer1 = () => {
+const Approver = () => {
   const { isAuthenticated, userProfile, token } = useAuth();
   const { search } = useLocation();
   const [isLoading, setIsLoading] = useState(false);
@@ -18,15 +17,13 @@ const Reviewer1 = () => {
   let { id, formId, user } = queryString.parse(search);
 
   useEffect(() => {
-    console.log(user);
     if (token) {
       if (
-        (user?.toLowerCase() === "reviewer1" ||
+        (user?.toLowerCase() === "approver" ||
           user?.toLowerCase() === "temp") &&
         id
       ) {
         console.log("in");
-        console.log(formId, "FormID Check");
         if (
           formId == null ||
           formId === undefined ||
@@ -43,7 +40,7 @@ const Reviewer1 = () => {
           fetchData();
         }
       } else {
-        console.log("go back to initiator from reviewer1");
+        console.log("go back to initiator from approver");
         navigate("/Initiator");
       }
     }
@@ -54,15 +51,16 @@ const Reviewer1 = () => {
       setIsLoading(true);
       //   const accessToken = await getAccessTokenSP();
       const data = await getListItemById(token, "EHS_initiator", id); // Replace with your list name
+
       if (
         user?.toLowerCase() === "temp" &&
-        data.InitiatorAddedData &&
-        !data.Reviewer1AddedData
+        data.Reviewer2AddedData &&
+        !data.ApproverAddedData
       ) {
         console.log("user is temp and the reviewer1 is not added data");
         navigate("/Initiator");
       }
-      if (data.FormId === formId && data.InitiatorAddedData) {
+      if (data.FormId === formId && data.Reviewer2AddedData === true) {
         setFormData({
           ID: data.ID,
           InitiatorName: data.InitiatorName,
@@ -76,6 +74,20 @@ const Reviewer1 = () => {
           Reviewer1AddedDate: data.Reviewer1AddedDate
             ? data.Reviewer1AddedDate.split("T")[0]
             : "",
+          Reviewer2Name: data.Reviewer2Name,
+          Reviewer2Email: data.Reviewer2Email,
+          Reviewer2Comments: data.Reviewer2Comments,
+          Reviewer2AddedData: data.Reviewer2AddedData,
+          Reviewer2AddedDate: data.Reviewer2AddedDate
+            ? data.Reviewer1AddedDate.split("T")[0]
+            : "",
+          ApproverName: data.ApproverName,
+          ApproverEmail: data.ApproverEmail,
+          ApproverComments: data.ApproverComments,
+          ApproverAddedData: data.ApproverAddedData,
+          ApproverAddedDate: data.ApproverAddedDate
+            ? data.ApproverAddedDate.split("T")[0]
+            : "",
           Element: data.Element,
           Program: data.Program,
           TargetDate: data.TargetDate ? data.TargetDate.split("T")[0] : "",
@@ -84,7 +96,7 @@ const Reviewer1 = () => {
           FormId: data.FormId,
         });
       } else {
-        console.log("form id is not equal OR initiator is not added the data");
+        console.log("form id is not equal OR reviewer2 is not added the data");
         navigate("/Initiator");
       }
       setIsLoading(false);
@@ -114,15 +126,17 @@ const Reviewer1 = () => {
   const siteUrl = process.env.REACT_APP_SP_SITE_URL;
 
   let isReadOnly = false;
-  if (formData.Reviewer1AddedData) {
+  if (formData.ApproverAddedData) {
     isReadOnly = true;
   }
 
   const userResultExp =
-    user?.toLowerCase() === "reviewer1" || user?.toLowerCase() === "temp";
-
+    user?.toLowerCase() === "approver" || user?.toLowerCase() === "temp";
   const condRendering =
-    userResultExp && formData.ID && !formData.Reviewer1AddedData;
+    userResultExp &&
+    formData.ID &&
+    !formData.ApproverAddedData &&
+    user.toLowerCase() === "approver";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -130,7 +144,7 @@ const Reviewer1 = () => {
 
     try {
       //   const accessToken = await getAccessTokenSP();
-      const updatedItemStatus = await addReviewer1Data(
+      const updatedItemStatus = await addApproverData(
         token,
         "EHS_initiator",
         id,
@@ -138,12 +152,16 @@ const Reviewer1 = () => {
       );
       // console.log("item after updated the data", updatedItemStatus);
       if (updatedItemStatus === 204) {
-        showMessage("success", "Reviewer added data successfully.", true);
-        navigate(`/Reviewer1?user=temp&id=${id}&formId=${formId}`);
+        showMessage(
+          "success",
+          "Your request was submitted successfully.",
+          true
+        );
+        navigate(`/Approver?user=temp&id=${id}&formId=${formId}`);
       }
     } catch (error) {
-      showMessage("error", "Something went wrong while submitting.");
       console.error("Error adding item:", error);
+      showMessage("error", "Something went wrong while submitting.");
     } finally {
       setIsLoading(false);
     }
@@ -176,43 +194,43 @@ const Reviewer1 = () => {
             )}
 
             <form onSubmit={handleSubmit}>
-              <h3>1st Reviewer Section</h3>
+              <h3>Approver Section</h3>
               <div className="row">
                 <div className="form-group col-md-6">
-                  <label>Reviewer Name</label>
+                  <label>Approver Name</label>
                   <input
                     type="text"
                     className="form-control"
-                    name="Reviewer1Name"
-                    value={formData.Reviewer1Name}
+                    name="ApproverName"
+                    value={formData.ApproverName}
                     onChange={handleInputChange}
                     required
-                    readOnly={isReadOnly}
+                    readOnly={user === "temp" || formData.ApproverAddedData}
                   />
                 </div>
                 <div className="form-group col-md-6">
-                  <label>Reviewer Email</label>
+                  <label>Approver Email</label>
                   <input
                     type="email"
                     className="form-control"
-                    name="Reviewer1Email"
-                    value={formData.Reviewer1Email}
+                    name="ApproverEmail"
+                    value={formData.ApproverEmail}
                     onChange={handleInputChange}
                     required
-                    readOnly={isReadOnly}
+                    readOnly={user === "temp" || formData.ApproverAddedData}
                   />
                 </div>
               </div>
 
               <div className="mb-3">
                 <div className="form-group">
-                  <label className="form-label">Reviewer Comments:</label>
+                  <label className="form-label">Approver Comments:</label>
                   <textarea
                     className="form-control"
-                    name="Reviewer1Comments"
-                    value={formData.Reviewer1Comments}
+                    name="ApproverComments"
+                    value={formData.ApproverComments}
                     onChange={handleTextAreaChange}
-                    readOnly={isReadOnly}
+                    readOnly={user === "temp" || formData.ApproverAddedData}
                   />
                 </div>
               </div>
@@ -236,19 +254,18 @@ const Reviewer1 = () => {
                 )}
 
                 <button
+                  disabled={user === "temp" || formData.ApproverAddedData}
                   type="submit"
-                  className={`btn btn-success ${isReadOnly ? "disabled" : ""} ${
-                    formData.Reviewer1AddedData ? "disabled" : ""
+                  className={`btn btn-success ${
+                    isReadOnly ? "disabled" : ""
                   } mt-2`}
                 >
-                  {formData.Reviewer1AddedData ? "Submitted" : "Submit Review"}
+                  {formData.ApproverAddedData ? "Submitted" : "Submit Review"}
                 </button>
               </div>
-
-              <hr />
             </form>
+            <hr />
             <form
-              //   onSubmit={handleSubmit}
               className={`form-container ${isLoading ? "disable-form" : ""}`}
             >
               <div className="form-group">
@@ -303,7 +320,7 @@ const Reviewer1 = () => {
                     type="date"
                     name="TargetDate"
                     value={formData.TargetDate}
-                    readOnly
+                    readOnly={isReadOnly}
                   />
                 </div>
               </div>
@@ -327,4 +344,4 @@ const Reviewer1 = () => {
   );
 };
 
-export default Reviewer1;
+export default Approver;

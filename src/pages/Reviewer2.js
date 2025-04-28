@@ -1,13 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import { useEffect, useState } from "react";
-import "./Overlay.css";
 import queryString from "query-string";
-import { addReviewer1Data, getListItemById } from "../api/sharepoint";
+import { addReviewer2Data, getListItemById } from "../api/sharepoint";
 import { useFlashMessage } from "../contexts/FlashMessageContext";
 import Header from "../components/Header";
 
-const Reviewer1 = () => {
+const Reviewer2 = () => {
   const { isAuthenticated, userProfile, token } = useAuth();
   const { search } = useLocation();
   const [isLoading, setIsLoading] = useState(false);
@@ -18,15 +17,13 @@ const Reviewer1 = () => {
   let { id, formId, user } = queryString.parse(search);
 
   useEffect(() => {
-    console.log(user);
     if (token) {
       if (
-        (user?.toLowerCase() === "reviewer1" ||
+        (user?.toLowerCase() === "reviewer2" ||
           user?.toLowerCase() === "temp") &&
         id
       ) {
         console.log("in");
-        console.log(formId, "FormID Check");
         if (
           formId == null ||
           formId === undefined ||
@@ -43,7 +40,7 @@ const Reviewer1 = () => {
           fetchData();
         }
       } else {
-        console.log("go back to initiator from reviewer1");
+        console.log("go back to initiator from reviewer2");
         navigate("/Initiator");
       }
     }
@@ -56,13 +53,13 @@ const Reviewer1 = () => {
       const data = await getListItemById(token, "EHS_initiator", id); // Replace with your list name
       if (
         user?.toLowerCase() === "temp" &&
-        data.InitiatorAddedData &&
-        !data.Reviewer1AddedData
+        data.Reviewer1AddedData &&
+        !data.Reviewer2AddedData
       ) {
-        console.log("user is temp and the reviewer1 is not added data");
+        console.log("user is temp and the reviewer2 is not added data");
         navigate("/Initiator");
       }
-      if (data.FormId === formId && data.InitiatorAddedData) {
+      if (data.FormId === formId && data.Reviewer1AddedData === true) {
         setFormData({
           ID: data.ID,
           InitiatorName: data.InitiatorName,
@@ -76,6 +73,13 @@ const Reviewer1 = () => {
           Reviewer1AddedDate: data.Reviewer1AddedDate
             ? data.Reviewer1AddedDate.split("T")[0]
             : "",
+          Reviewer2Name: data.Reviewer2Name,
+          Reviewer2Email: data.Reviewer2Email,
+          Reviewer2Comments: data.Reviewer2Comments,
+          Reviewer2AddedData: data.Reviewer2AddedData,
+          Reviewer2AddedDate: data.Reviewer2AddedDate
+            ? data.Reviewer1AddedDate.split("T")[0]
+            : "",
           Element: data.Element,
           Program: data.Program,
           TargetDate: data.TargetDate ? data.TargetDate.split("T")[0] : "",
@@ -84,7 +88,7 @@ const Reviewer1 = () => {
           FormId: data.FormId,
         });
       } else {
-        console.log("form id is not equal OR initiator is not added the data");
+        console.log("form id is not equal OR reviewer1 is not added the data");
         navigate("/Initiator");
       }
       setIsLoading(false);
@@ -114,15 +118,16 @@ const Reviewer1 = () => {
   const siteUrl = process.env.REACT_APP_SP_SITE_URL;
 
   let isReadOnly = false;
-  if (formData.Reviewer1AddedData) {
+  if (formData.Reviewer2AddedData) {
     isReadOnly = true;
   }
-
   const userResultExp =
-    user?.toLowerCase() === "reviewer1" || user?.toLowerCase() === "temp";
-
+    user?.toLowerCase() === "reviewer2" || user?.toLowerCase() === "temp";
   const condRendering =
-    userResultExp && formData.ID && !formData.Reviewer1AddedData;
+    userResultExp &&
+    formData.ID &&
+    !formData.Reviewer2AddedData &&
+    user.toLowerCase() === "reviewer2";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -130,7 +135,7 @@ const Reviewer1 = () => {
 
     try {
       //   const accessToken = await getAccessTokenSP();
-      const updatedItemStatus = await addReviewer1Data(
+      const updatedItemStatus = await addReviewer2Data(
         token,
         "EHS_initiator",
         id,
@@ -139,7 +144,7 @@ const Reviewer1 = () => {
       // console.log("item after updated the data", updatedItemStatus);
       if (updatedItemStatus === 204) {
         showMessage("success", "Reviewer added data successfully.", true);
-        navigate(`/Reviewer1?user=temp&id=${id}&formId=${formId}`);
+        navigate(`/Reviewer2?user=temp&id=${id}&formId=${formId}`);
       }
     } catch (error) {
       showMessage("error", "Something went wrong while submitting.");
@@ -176,18 +181,18 @@ const Reviewer1 = () => {
             )}
 
             <form onSubmit={handleSubmit}>
-              <h3>1st Reviewer Section</h3>
+              <h3>2nd Reviewer Section</h3>
               <div className="row">
                 <div className="form-group col-md-6">
                   <label>Reviewer Name</label>
                   <input
                     type="text"
                     className="form-control"
-                    name="Reviewer1Name"
-                    value={formData.Reviewer1Name}
+                    name="Reviewer2Name"
+                    value={formData.Reviewer2Name}
                     onChange={handleInputChange}
                     required
-                    readOnly={isReadOnly}
+                    readOnly={user === "temp" || formData.Reviewer2AddedData}
                   />
                 </div>
                 <div className="form-group col-md-6">
@@ -195,11 +200,11 @@ const Reviewer1 = () => {
                   <input
                     type="email"
                     className="form-control"
-                    name="Reviewer1Email"
-                    value={formData.Reviewer1Email}
+                    name="Reviewer2Email"
+                    value={formData.Reviewer2Email}
                     onChange={handleInputChange}
                     required
-                    readOnly={isReadOnly}
+                    readOnly={user === "temp" || formData.Reviewer2AddedData}
                   />
                 </div>
               </div>
@@ -209,10 +214,10 @@ const Reviewer1 = () => {
                   <label className="form-label">Reviewer Comments:</label>
                   <textarea
                     className="form-control"
-                    name="Reviewer1Comments"
-                    value={formData.Reviewer1Comments}
+                    name="Reviewer2Comments"
+                    value={formData.Reviewer2Comments}
                     onChange={handleTextAreaChange}
-                    readOnly={isReadOnly}
+                    readOnly={user === "temp" || formData.Reviewer2AddedData}
                   />
                 </div>
               </div>
@@ -236,19 +241,20 @@ const Reviewer1 = () => {
                 )}
 
                 <button
+                  disabled={user === "temp" || formData.Reviewer2AddedData}
                   type="submit"
-                  className={`btn btn-success ${isReadOnly ? "disabled" : ""} ${
-                    formData.Reviewer1AddedData ? "disabled" : ""
+                  className={`btn btn-success ${
+                    isReadOnly ? "disabled" : ""
                   } mt-2`}
                 >
-                  {formData.Reviewer1AddedData ? "Submitted" : "Submit Review"}
+                  {formData.Reviewer2AddedData ? "Submitted" : "Submit Review"}
                 </button>
               </div>
-
-              <hr />
             </form>
+
+            <hr />
+
             <form
-              //   onSubmit={handleSubmit}
               className={`form-container ${isLoading ? "disable-form" : ""}`}
             >
               <div className="form-group">
@@ -303,7 +309,7 @@ const Reviewer1 = () => {
                     type="date"
                     name="TargetDate"
                     value={formData.TargetDate}
-                    readOnly
+                    readOnly={isReadOnly}
                   />
                 </div>
               </div>
@@ -327,4 +333,4 @@ const Reviewer1 = () => {
   );
 };
 
-export default Reviewer1;
+export default Reviewer2;

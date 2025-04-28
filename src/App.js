@@ -11,6 +11,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Initiator from "./pages/Initiator";
 import { FlashMessageProvider } from "./contexts/FlashMessageContext";
 import Reviewer1 from "./pages/Reviewer1";
+import Reviewer2 from "./pages/Reviewer2";
+import Approver from "./pages/Approver";
 
 function App() {
   return (
@@ -43,6 +45,22 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Reviewer1 />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/Reviewer2"
+                element={
+                  <ProtectedRoute>
+                    <Reviewer2 />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/Approver"
+                element={
+                  <ProtectedRoute>
+                    <Approver />
                   </ProtectedRoute>
                 }
               />
