@@ -5,6 +5,7 @@ import queryString from "query-string";
 import { addApproverData, getListItemById } from "../api/sharepoint";
 import { useFlashMessage } from "../contexts/FlashMessageContext";
 import Header from "../components/Header";
+import "./Overlay.css";
 
 const Approver = () => {
   const { isAuthenticated, userProfile, token } = useAuth();

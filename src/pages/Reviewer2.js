@@ -5,6 +5,7 @@ import queryString from "query-string";
 import { addReviewer2Data, getListItemById } from "../api/sharepoint";
 import { useFlashMessage } from "../contexts/FlashMessageContext";
 import Header from "../components/Header";
+import "./Overlay.css";
 
 const Reviewer2 = () => {
   const { isAuthenticated, userProfile, token } = useAuth();

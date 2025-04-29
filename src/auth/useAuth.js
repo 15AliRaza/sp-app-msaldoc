@@ -11,6 +11,7 @@ export const useAuth = () => {
 
   useEffect(() => {
     if (inProgress === "none") {
+      // const accounts = instance.getAllAccounts();
       if (accounts.length > 0) {
         setIsAuthenticated(true);
         setUserProfile(accounts[0]);
@@ -32,22 +33,69 @@ export const useAuth = () => {
             setIsLoading(false);
           });
       } else {
+        instance.loginPopup(loginRequest).catch((error) => {
+          console.error("Login failed", error);
+          setIsLoading(false);
+        });
         console.log("reset");
-        setIsAuthenticated(false);
+        /*setIsAuthenticated(false);
         setUserProfile(null);
         setToken(null);
-        setIsLoading(false);
+        setIsLoading(false);*/
+        /*instance
+          .ssoSilent(loginRequest)
+          .then((response) => {
+            instance.setActiveAccount(response.account);
+            setIsAuthenticated(true);
+            setUserProfile(response.account);
+            setToken(response.accessToken);
+          })
+          .catch((error) => {
+            console.log("Silent login failed", error);
+            setIsAuthenticated(false);
+            setUserProfile(null);
+            setToken(null);
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });*/
       }
     }
   }, [accounts, instance, inProgress]);
 
-  const login = () => {
+  const login = async () => {
+    setIsLoading(true);
+    try {
+      // Try silent login first if possible
+      const accounts = instance.getAllAccounts();
+      if (accounts.length > 0) {
+        const response = await instance.acquireTokenSilent({
+          ...loginRequest,
+          account: accounts[0],
+        });
+        setToken(response.accessToken);
+        setUserProfile(accounts[0]);
+        setIsAuthenticated(true);
+      } else {
+        // Fallback to popup
+        await instance.loginPopup(loginRequest);
+      }
+    } catch (error) {
+      console.error("Login failed", error);
+      // Try popup if silent fails
+      await instance.loginPopup(loginRequest);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /*const login = () => {
     setIsLoading(true);
     instance.loginPopup(loginRequest).catch((error) => {
       console.error("Login failed", error);
       setIsLoading(false);
     });
-  };
+  };*/
 
   const logout = () => {
     setIsLoading(true);

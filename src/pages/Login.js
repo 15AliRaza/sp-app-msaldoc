@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
+import Loading from "../components/Loading";
 
 const Login = () => {
   const { isAuthenticated, login } = useAuth();
@@ -20,20 +21,14 @@ const Login = () => {
   useEffect(() => {
     if (isAuthenticated) {
       navigate(redirectUrl); // Will preserve the full URL with params
+    } else {
+      // login();
     }
   }, [isAuthenticated, navigate, redirectUrl]);
 
   return (
     <div className="container mt-5">
-      <div className="row justify-content-center">
-        <div className="col-md-6 text-center">
-          <h2>Welcome to SharePoint App</h2>
-          <p>Please sign in to continue</p>
-          <button onClick={login} className="btn btn-primary">
-            Sign in with Microsoft
-          </button>
-        </div>
-      </div>
+      <Loading />
     </div>
   );
 };
