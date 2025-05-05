@@ -14,6 +14,51 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
+      await msalInstance.initialize();
+
+      try {
+        // Handle the redirect response
+        const response = await msalInstance.handleRedirectPromise();
+
+        if (response) {
+          msalInstance.setActiveAccount(response.account);
+
+          // Get the stored pre-auth URL or use root
+          const redirectUrl = sessionStorage.getItem("preAuthUrl") || "/";
+          sessionStorage.removeItem("preAuthUrl");
+
+          // Only navigate if we're on the login page
+          if (window.location.pathname === "/login") {
+            console.log("--------------", redirectUrl);
+            //window.location.href = redirectUrl; // Full page reload to break cycle
+          }
+        }
+      } catch (error) {
+        console.error("Auth error:", error);
+      } finally {
+        setInitialized(true);
+      }
+    };
+
+    initializeAuth();
+
+    // Event listener for account changes
+    const callbackId = msalInstance.addEventCallback((event) => {
+      if (
+        event.eventType === EventType.LOGIN_SUCCESS ||
+        event.eventType === EventType.ACQUIRE_TOKEN_SUCCESS
+      ) {
+        msalInstance.setActiveAccount(event.payload.account);
+      }
+    });
+
+    return () => {
+      if (callbackId) msalInstance.removeEventCallback(callbackId);
+    };
+  }, []);
+
+  /*useEffect(() => {
+    const initializeAuth = async () => {
       try {
         await msalInstance.initialize();
 
@@ -63,7 +108,7 @@ export const AuthProvider = ({ children }) => {
     return () => {
       if (callbackId) msalInstance.removeEventCallback(callbackId);
     };
-  }, []);
+  }, []);*/
 
   if (!initialized) {
     return <div>Loading authentication state...</div>;

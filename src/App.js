@@ -13,6 +13,7 @@ import { FlashMessageProvider } from "./contexts/FlashMessageContext";
 import Reviewer1 from "./pages/Reviewer1";
 import Reviewer2 from "./pages/Reviewer2";
 import Approver from "./pages/Approver";
+import External from "./pages/External";
 
 function App() {
   return (
@@ -65,6 +66,7 @@ function App() {
                 }
               />
               <Route path="*" element={<Error />} />
+              <Route path="/External" element={<External />} />
             </Routes>
           </FlashMessageProvider>
         </Router>

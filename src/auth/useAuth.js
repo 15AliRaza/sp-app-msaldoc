@@ -10,6 +10,45 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const handleAuthentication = async () => {
+      if (inProgress === "none") {
+        try {
+          // Handle redirect response first
+          const redirectResponse = await instance.handleRedirectPromise();
+          if (redirectResponse) {
+            instance.setActiveAccount(redirectResponse.account);
+          }
+
+          // Check for existing accounts
+          const currentAccounts = instance.getAllAccounts();
+          if (currentAccounts.length > 0) {
+            setIsAuthenticated(true);
+            setUserProfile(currentAccounts[0]);
+
+            // Get token silently
+            const tokenResponse = await instance.acquireTokenSilent({
+              ...loginRequest,
+              account: currentAccounts[0],
+            });
+            setToken(tokenResponse.accessToken);
+          } else {
+            setIsAuthenticated(false);
+            setUserProfile(null);
+            setToken(null);
+          }
+        } catch (error) {
+          console.error("Authentication error:", error);
+          setIsAuthenticated(false);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    handleAuthentication();
+  }, [accounts, instance, inProgress]);
+
+  /*useEffect(() => {
     if (inProgress === "none") {
       // const accounts = instance.getAllAccounts();
       if (accounts.length > 0) {
@@ -37,12 +76,12 @@ export const useAuth = () => {
           console.error("Login failed", error);
           setIsLoading(false);
         });
-        console.log("reset");
-        /*setIsAuthenticated(false);
+        console.log("reset");*/
+  /*setIsAuthenticated(false);
         setUserProfile(null);
         setToken(null);
         setIsLoading(false);*/
-        /*instance
+  /*instance
           .ssoSilent(loginRequest)
           .then((response) => {
             instance.setActiveAccount(response.account);
@@ -59,11 +98,45 @@ export const useAuth = () => {
           .finally(() => {
             setIsLoading(false);
           });*/
-      }
+  /*}
     }
-  }, [accounts, instance, inProgress]);
+  }, [accounts, instance, inProgress]);*/
 
   const login = async () => {
+    setIsLoading(true);
+
+    try {
+      // Try silent login first if possible
+      const accounts = instance.getAllAccounts();
+      if (accounts.length > 0) {
+        const response = await instance.acquireTokenSilent({
+          ...loginRequest,
+          account: accounts[0],
+        });
+        setToken(response.accessToken);
+        setUserProfile(accounts[0]);
+        setIsAuthenticated(true);
+      } else {
+        // Fallback to popup
+        await instance.loginRedirect(loginRequest);
+      }
+    } catch (error) {
+      console.error("Login failed", error);
+      // Try popup if silent fails
+      await instance.loginRedirect(loginRequest);
+    } finally {
+      setIsLoading(false);
+    }
+
+    // Store ONLY the path you want to return to, not full URL
+    const returnPath = window.location.pathname + window.location.search;
+
+    sessionStorage.setItem("preAuthUrl", returnPath);
+    console.log(returnPath);
+    //instance.loginRedirect(loginRequest);
+  };
+
+  /*const login = async () => {
     setIsLoading(true);
     try {
       // Try silent login first if possible
@@ -87,7 +160,7 @@ export const useAuth = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  };*/
 
   /*const login = () => {
     setIsLoading(true);
